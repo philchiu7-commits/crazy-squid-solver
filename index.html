@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Crazy Squid Solver</title>
+<!-- PWA / installable home-screen app -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Squid Solver">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root{
+    --bg:#0e1116;--panel:#161b22;--panel2:#1c2330;--ink:#e6edf3;--muted:#8b949e;
+    --accent:#2f81f7;--accent2:#1f6feb;--good:#3fb950;--bad:#f85149;--warn:#d29922;
+    --line:#30363d;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.45;font-size:14px}
+  header{padding:18px 26px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    padding-top:calc(18px + env(safe-area-inset-top));
+    padding-left:calc(26px + env(safe-area-inset-left));
+    padding-right:calc(26px + env(safe-area-inset-right))}
+  main{padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+  h1{font-size:21px;margin:0;letter-spacing:.3px}
+  h1 .em{color:var(--accent)}
+  .sub{color:var(--muted);font-size:12.5px}
+  main{max-width:1080px;margin:0 auto;padding:22px 26px;display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:820px){main{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 14px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0}
+  .row label{flex:1;color:var(--ink)}
+  .row .hint{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  input[type=number],select{background:var(--bg);border:1px solid var(--line);color:var(--ink);
+    border-radius:7px;padding:7px 9px;font-family:var(--mono);font-size:13px;width:110px;text-align:right}
+  select{text-align:left;width:150px}
+  input[type=number]:focus,select:focus{outline:none;border-color:var(--accent)}
+  .toggle{position:relative;width:42px;height:23px;flex:0 0 auto}
+  .toggle input{display:none}
+  .toggle span{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--line);
+    border-radius:20px;transition:.15s;cursor:pointer}
+  .toggle span:before{content:"";position:absolute;width:17px;height:17px;left:2px;top:2px;
+    background:var(--muted);border-radius:50%;transition:.15s}
+  .toggle input:checked+span{background:var(--accent)}
+  .toggle input:checked+span:before{transform:translateX(19px);background:#fff}
+  .sub-block{border-left:2px solid var(--line);padding-left:12px;margin:6px 0 12px}
+  .sub-block.off{opacity:.4;pointer-events:none}
+  table.mini{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+  table.mini th,table.mini td{border:1px solid var(--line);padding:4px 6px;text-align:center}
+  table.mini th{color:var(--muted);font-weight:500}
+  table.mini input{width:60px;padding:4px}
+  .players{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .players .pl{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .players .pl span{font-size:11px;color:var(--muted)}
+  .players .pl input{width:54px;text-align:center}
+  .players .pl.hero input{border-color:var(--accent)}
+  button.run{width:100%;background:var(--accent);color:#fff;border:0;border-radius:9px;
+    padding:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+  button.run:hover{background:var(--accent2)}
+  button.run:disabled{opacity:.55;cursor:default}
+  .results .big{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .metric .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .metric .v{font-size:24px;font-family:var(--mono);margin-top:3px}
+  .metric .v.pos{color:var(--good)}.metric .v.neg{color:var(--bad)}
+  .metric .u{font-size:12px;color:var(--muted)}
+  .rtable{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+  .rtable td{padding:6px 4px;border-bottom:1px solid var(--line)}
+  .rtable td:last-child{text-align:right;font-family:var(--mono)}
+  .rtable td.lbl{color:var(--muted)}
+  .placeholder{color:var(--muted);text-align:center;padding:40px 0;font-size:13px}
+  .note{color:var(--muted);font-size:11.5px;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .info{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+    border:1px solid var(--line);border-radius:50%;font-size:11px;font-style:italic;font-family:Georgia,serif;
+    color:var(--muted);margin-left:6px;cursor:pointer;user-select:none;vertical-align:middle;flex:0 0 auto}
+  .info:hover,.info.on{border-color:var(--accent);color:var(--accent)}
+  .exp{display:none;font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45;
+    background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  .exp.show{display:block}
+  .metric .k{display:flex;align-items:center}
+  .rtable td.lbl{display:flex;align-items:center;gap:0}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;
+    border-radius:50%;animation:s .6s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  details summary{cursor:pointer;color:var(--muted);font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🦑 Crazy Squid <span class="em">Solver</span></h1>
+  <span class="sub">Monte Carlo EV solver — runs entirely in your browser</span>
+</header>
+<main>
+  <!-- ============ INPUTS ============ -->
+  <div class="card" id="inputs">
+    <h2>Inputs</h2>
+
+    <div class="row"><label># of Players</label>
+      <input type="number" id="nPlayers" min="2" max="10" step="1" value="7"></div>
+    <div class="row"><label>Squid payment per Button <span class="hint">in BB</span></label>
+      <input type="number" id="squidPay" step="0.5" value="2"></div>
+    <div class="row"><label>Buttons to End <span class="hint">max hands before game ends</span></label>
+      <input type="number" id="buttonsToEnd" step="1" value="10"></div>
+    <div class="row"><label>Buttons to be Safe</label>
+      <input type="number" id="buttonsToBeSafe" step="1" min="1" value="1"></div>
+    <div class="row"><label>Fight Factor <span class="hint">1 = no extra fight, 2 = max</span></label>
+      <input type="number" id="fightFactor" step="0.05" min="1" max="2" value="1.1"></div>
+    <div class="row"><label>Level of fishiness</label>
+      <select id="fishiness">
+        <option value="0.1">Minor Whales</option>
+        <option value="0.31" selected>Medium Whales</option>
+        <option value="0.5">Mega Whales</option>
+      </select></div>
+
+    <div class="row"><label>Enable Multipliers</label>
+      <label class="toggle"><input type="checkbox" id="enableMult" checked><span></span></label></div>
+    <div class="sub-block" id="multBlock">
+      <table class="mini">
+        <tr><th># Buttons ≥</th><th>Multiplier</th></tr>
+        <tr><td><input type="number" id="mt0" value="3"></td><td><input type="number" id="mv0" value="2"></td></tr>
+        <tr><td><input type="number" id="mt1" value="5"></td><td><input type="number" id="mv1" value="3"></td></tr>
+        <tr><td><input type="number" id="mt2" value="7"></td><td><input type="number" id="mv2" value="4"></td></tr>
+      </table>
+    </div>
+
+    <div class="row"><label>Enable Bonuses <span class="hint">in BB</span></label>
+      <label class="toggle"><input type="checkbox" id="enableBonus"><span></span></label></div>
+    <div class="sub-block off" id="bonusBlock">
+      <div class="row"><label># of Buttons ≥</label><input type="number" id="bonusThresh" value="10"></div>
+      <div class="row"><label>Bonus value</label><input type="number" id="bonusValue" value="0"></div>
+    </div>
+
+    <div class="row"><label>Each loser splashes next pot <span class="hint">penalty in BB</span></label>
+      <input type="number" id="splashPenalty" step="0.5" value="0"></div>
+    <div class="row"><label>Losers share the penalty</label>
+      <label class="toggle"><input type="checkbox" id="losersShare"><span></span></label></div>
+
+    <h2 style="margin-top:18px">Current Button Counts</h2>
+    <div class="hint" style="color:var(--muted);font-size:12px">Hero is highlighted. Set how many buttons each player already holds.</div>
+    <div class="players" id="players"></div>
+
+    <details><summary>Advanced</summary>
+      <div class="row" style="margin-top:8px"><label># of simulations <span class="hint">higher = more accurate, slower</span></label>
+        <input type="number" id="nSims" step="5000" value="30000"></div>
+    </details>
+
+    <button class="run" id="run">Run Solver</button>
+  </div>
+
+  <!-- ============ RESULTS ============ -->
+  <div class="card results" id="results">
+    <h2>Results</h2>
+    <div id="resBody"><div class="placeholder">Set your inputs and hit <b>Run Solver</b>.</div></div>
+  </div>
+</main>
+
+<script>
+// ===================== helpers =====================
+const $=id=>document.getElementById(id);
+function buildPlayers(){
+  const n=Math.max(2,Math.min(10,+$('nPlayers').value||2));
+  const box=$('players'); const prev={};
+  [...box.querySelectorAll('input')].forEach(i=>prev[i.dataset.i]=i.value);
+  box.innerHTML='';
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.className='pl'+(i===0?' hero':'');
+    d.innerHTML=`<span>${i===0?'Hero':'P'+(i+1)}</span>
+      <input type="number" min="0" step="1" data-i="${i}" value="${prev[i]??0}">`;
+    box.appendChild(d);
+  }
+}
+function readPlayers(){return [...$('players').querySelectorAll('input')].map(i=>Math.max(0,+i.value||0));}
+
+function readInputs(){
+  const mult=$('enableMult').checked, bonus=$('enableBonus').checked;
+  const thresholds=[+$('mt0').value,+$('mt1').value,+$('mt2').value];
+  const values=[+$('mv0').value,+$('mv1').value,+$('mv2').value];
+  return {
+    nPlayers:+$('nPlayers').value, squidPay:+$('squidPay').value,
+    buttonsToEnd:+$('buttonsToEnd').value, buttonsToBeSafe:Math.max(1,+$('buttonsToBeSafe').value),
+    fightFactor:+$('fightFactor').value, fishiness:+$('fishiness').value,
+    enableMult:mult, thresholds, values,
+    enableBonus:bonus, bonusThresh:+$('bonusThresh').value, bonusValue:+$('bonusValue').value,
+    splashPenalty:+$('splashPenalty').value, losersShare:$('losersShare').checked,
+    start:readPlayers(), nSims:Math.max(2000,+$('nSims').value||30000),
+  };
+}
+
+// multiplier for a button count
+function effMult(b,I){
+  if(!I.enableMult) return 1;
+  let m=1;
+  for(let k=0;k<I.thresholds.length;k++) if(b>=I.thresholds[k]) m=Math.max(m,I.values[k]);
+  return m;
+}
+
+// ===================== Monte Carlo engine =====================
+// Simulate one game forward from `state` (array of button counts) to the end condition.
+// Returns final state (array). If forceFirstWinner != null, that player wins hand #1.
+function simulateGame(state, I, rng, forceFirstWinner){
+  const n=state.length;
+  const s=state.slice();
+  const safe=I.buttonsToBeSafe;
+  let handsPlayed=0;
+  // count already-distributed buttons; game ends after buttonsToEnd hands total from a fresh game.
+  // We model hands remaining as buttonsToEnd minus buttons already on the table.
+  let distributed=s.reduce((a,b)=>a+b,0);
+  while(true){
+    // end condition: all but one player safe, OR reached buttonsToEnd buttons handed out
+    const unsafeIdx=[];
+    for(let i=0;i<n;i++) if(s[i]<safe) unsafeIdx.push(i);
+    if(unsafeIdx.length<=1) break;
+    if(distributed>=I.buttonsToEnd) break;
+    // pick winner, fight-weighted
+    let winner;
+    if(handsPlayed===0 && forceFirstWinner!=null){
+      winner=forceFirstWinner;
+    }else{
+      let total=0; const w=new Array(n);
+      for(let i=0;i<n;i++){ w[i]=(s[i]<safe)?I.fightFactor:1; total+=w[i]; }
+      let r=rng()*total, acc=0; winner=n-1;
+      for(let i=0;i<n;i++){ acc+=w[i]; if(r<=acc){winner=i;break;} }
+    }
+    s[winner]++; distributed++; handsPlayed++;
+    if(handsPlayed>500) break; // safety
+  }
+  return s;
+}
+
+// Hero EV for a given END state (Processed Simulation formulas).
+function heroEVForState(s,I){
+  const n=s.length, safe=I.buttonsToBeSafe;
+  let nLosers=0; for(let i=0;i<n;i++) if(s[i]<safe) nLosers++;
+  // winner receipts
+  const receipt=i=>{
+    if(s[i]<safe) return 0;
+    const mult=I.losersShare?1:nLosers;
+    return s[i]*effMult(s[i],I)*I.squidPay*mult;
+  };
+  const heroSafe=s[0]>=safe;
+  let base;
+  if(heroSafe){
+    base=receipt(0);
+  }else{
+    // hero pays as a loser: total winner receipts split among losers, minus splash
+    let AH=0; for(let i=0;i<n;i++) AH+=receipt(i);
+    const splash=nLosers>0?-I.splashPenalty/nLosers:0;
+    const payPerLoser=nLosers>0?AH/nLosers - splash:0;
+    base=-payPerLoser;
+  }
+  // bonus
+  let bonus=0;
+  if(I.enableBonus){
+    bonus=(s[0]>=I.bonusThresh?I.bonusValue*(n-1):0);
+    let others=0; for(let i=1;i<n;i++) if(s[i]>=I.bonusThresh) others++;
+    bonus-=others*I.bonusValue;
+  }
+  return base+bonus;
+}
+
+// Run nSims from start state (optionally forcing first winner), return avg hero EV.
+function expectedHeroEV(I,rng,forceFirstWinner){
+  let sum=0;
+  for(let k=0;k<I.nSims;k++){
+    const end=simulateGame(I.start,I,rng,forceFirstWinner);
+    sum+=heroEVForState(end,I);
+  }
+  return sum/I.nSims;
+}
+
+// simple seeded RNG (mulberry32) for reproducibility
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;}}
+
+// ===================== Desperation model =====================
+function desperation(I,B19){
+  // hands left = buttonsToEnd - buttons already distributed (one button per hand)
+  const distributed=I.start.reduce((a,b)=>a+b,0);
+  const handsLeft=Math.max(0,I.buttonsToEnd-distributed);
+  if(handsLeft<=1) return {bonus:0,penalty:0,handsLeft};
+  const ff=I.fightFactor, R=I.fishiness, nP=I.nPlayers, safe=I.buttonsToBeSafe;
+  const initUnsafe=I.start.filter(b=>b<safe).length;
+  // Build per-hand rows, index 0 = "we are here" (m=handsLeft), index i = after i hands.
+  // Recurrence mirrors Model sheet columns M,N,O,P,S,T,U,W.
+  const rows=[];
+  let N=initUnsafe;
+  for(let i=0;i<handsLeft;i++){
+    const m=handsLeft-i;
+    const O=nP-N;
+    const P=(N*ff)/(N*ff+O*1);
+    const S=R*Math.pow(m,-0.7)*Math.pow(Math.abs(B19),0.7);
+    const U=(S*N)/(nP-1);          // winner's EV gain per player w/button
+    const W=S*(O/(nP-1));          // EV loss per player
+    rows.push({N,O,U,W});
+    N=Math.max(0,N-1*P*(1/safe));
+  }
+  // Bonus = V at row index 1 (state after the upcoming hand) = sum of U from idx 1 down.
+  // Penalty = X at row index 1 = (1/N[1]) * SUMPRODUCT(W[i],N[i]) for i>=1.
+  let bonus=0, sp=0;
+  for(let i=1;i<rows.length;i++){ bonus+=rows[i].U; sp+=rows[i].W*rows[i].N; }
+  const penalty = rows.length>1 && rows[1].N>0 ? sp/rows[1].N : 0;
+  return {bonus, penalty, handsLeft};
+}
+
+// ===================== orchestration =====================
+function solve(){
+  const I=readInputs();
+  const rng=mulberry32(0x5169);   // fixed seed -> stable results
+  const n=I.nPlayers;
+
+  // Total Equity (hero current EV) over end states
+  const totalEquity=expectedHeroEV(I,rng,null);
+
+  // Ante: hero EV if hero wins next hand vs if each opponent wins next hand
+  const evHeroWins=expectedHeroEV(I,mulberry32(0x111),0);
+  const evOppWins=[];
+  for(let p=1;p<n;p++) evOppWins.push(expectedHeroEV(I,mulberry32(0x222+p),p));
+  const avgOpp=evOppWins.reduce((a,b)=>a+b,0)/evOppWins.length;
+  const B19=evHeroWins-avgOpp;     // per-hand ante advantage
+
+  // splits: opponents who are safe vs not (by current buttons)
+  const oppSafeEVs=[], oppUnsafeEVs=[];
+  for(let p=1;p<n;p++){
+    if(I.start[p]>=I.buttonsToBeSafe) oppSafeEVs.push(evOppWins[p-1]);
+    else oppUnsafeEVs.push(evOppWins[p-1]);
+  }
+  const anteVs=arr=>arr.length?evHeroWins-arr.reduce((a,b)=>a+b,0)/arr.length:B19;
+
+  // Desperation (only if hero currently has no button)
+  const heroHasButton=I.start[0]>=I.buttonsToBeSafe;
+  const desp=desperation(I,B19);
+  const despBonus = heroHasButton?0:desp.bonus;
+  const despPenalty = heroHasButton?0:desp.penalty;
+
+  const anteAll = B19 + despBonus + despPenalty;
+  const anteSafe = anteVs(oppSafeEVs) + despBonus + despPenalty;
+  const anteUnsafe = anteVs(oppUnsafeEVs) + despBonus + despPenalty;
+
+  return {totalEquity,B19,despBonus,despPenalty,anteAll,anteSafe,anteUnsafe,
+          heroHasButton,handsLeft:desp.handsLeft,oppSafeEVs,oppUnsafeEVs};
+}
+
+function fmt(x,d=2){return (x>=0?'':'')+x.toFixed(d);}
+// tap "i" -> {label}{i}  with explanation panel id
+const EXP={
+  eq:`Your expected net result, in BB, from the current state played all the way to the end of the game — averaged over thousands of simulated finishes. Positive = you expect to profit; negative = you expect to lose on net.`,
+  ante:`How much winning the next hand is worth to you: the swing between you grabbing the next button vs. an opponent grabbing it. This is the raw per-hand value before the desperation adjustments below.`,
+  dbon:`Extra EV you pick up over the rest of the game by getting a button now and capitalizing on opponents who play badly while they're desperate. Only applies when you currently have no button.`,
+  dpen:`EV you'd otherwise lose by having to play worse while you hold no button (you only lose to players who already have one). It's added into the total ante as part of what winning the next hand saves you.`,
+  tall:`The full value of winning the next hand against all remaining opponents = per-hand ante + desperation bonus + desperation penalty. This is the headline "how hard should I fight for the next button" number.`,
+  tsafe:`Same as Total Ante, but measured only against opponents who are currently safe (already have enough buttons).`,
+  tuns:`Same as Total Ante, but measured only against opponents who are not yet safe (still fighting for a button).`,
+  hl:`Buttons still to be handed out before the game ends — Buttons to End minus the buttons already on the table. One button is awarded per hand.`,
+};
+function ic(id){return `<span class="info" data-exp="${id}">i</span>`;}
+function exp(id){return `<div class="exp" id="exp-${id}">${EXP[id]}</div>`;}
+function render(R){
+  const cls=x=>x>=0?'pos':'neg';
+  $('resBody').innerHTML=`
+    <div class="big">
+      <div class="metric"><div class="k">Total Equity ${ic('eq')}</div>
+        <div class="v ${cls(R.totalEquity)}">${fmt(R.totalEquity)}</div><div class="u">BB (current EV)</div>${exp('eq')}</div>
+      <div class="metric"><div class="k">Per-hand Ante ${ic('ante')}</div>
+        <div class="v ${cls(R.B19)}">${fmt(R.B19)}</div><div class="u">BB advantage / hand won</div>${exp('ante')}</div>
+    </div>
+    <table class="rtable">
+      <tr><td class="lbl">Desperation ${R.heroHasButton?'bonus (n/a — hero safe)':'bonus'} ${ic('dbon')}</td><td>${fmt(R.despBonus)}</td></tr>
+      <tr class="exp-host"><td colspan="2">${exp('dbon')}</td></tr>
+      <tr><td class="lbl">Desperation ${R.heroHasButton?'penalty (n/a — hero safe)':'penalty'} ${ic('dpen')}</td><td>${fmt(R.despPenalty)}</td></tr>
+      <tr class="exp-host"><td colspan="2">${exp('dpen')}</td></tr>
+      <tr><td class="lbl"><b>Total&nbsp;"Ante"</b>&nbsp;— all remaining opps ${ic('tall')}</td><td><b>${fmt(R.anteAll)}</b></td></tr>
+      <tr class="exp-host"><td colspan="2">${exp('tall')}</td></tr>
+      <tr><td class="lbl">Total "Ante" — remaining opps are safe ${ic('tsafe')}</td><td>${R.oppSafeEVs.length?fmt(R.anteSafe):'—'}</td></tr>
+      <tr class="exp-host"><td colspan="2">${exp('tsafe')}</td></tr>
+      <tr><td class="lbl">Total "Ante" — remaining opps not safe ${ic('tuns')}</td><td>${R.oppUnsafeEVs.length?fmt(R.anteUnsafe):'—'}</td></tr>
+      <tr class="exp-host"><td colspan="2">${exp('tuns')}</td></tr>
+      <tr><td class="lbl">Hands left to play ${ic('hl')}</td><td>${R.handsLeft}</td></tr>
+      <tr class="exp-host"><td colspan="2">${exp('hl')}</td></tr>
+    </table>
+    <div class="note">All figures in big blinds (BB). Tap any <span class="info" style="cursor:default">i</span> for an explanation.
+      Re-implemented from the Crazy Squid Solver spreadsheet; Monte Carlo runs live on-device with a fixed seed (stable results).</div>`;
+}
+// toggle explanations (event delegation; works for taps on touch devices)
+$('resBody').addEventListener('click',e=>{
+  const chip=e.target.closest('.info[data-exp]'); if(!chip) return;
+  const panel=document.getElementById('exp-'+chip.dataset.exp);
+  if(!panel) return;
+  const show=!panel.classList.contains('show');
+  panel.classList.toggle('show',show);
+  chip.classList.toggle('on',show);
+});
+
+// ===================== wiring =====================
+$('nPlayers').addEventListener('change',buildPlayers);
+$('enableMult').addEventListener('change',e=>$('multBlock').classList.toggle('off',!e.target.checked));
+$('enableBonus').addEventListener('change',e=>$('bonusBlock').classList.toggle('off',!e.target.checked));
+$('run').addEventListener('click',()=>{
+  const btn=$('run'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>Simulating…';
+  setTimeout(()=>{
+    try{ render(solve()); }
+    catch(e){ $('resBody').innerHTML='<div class="placeholder">Error: '+e.message+'</div>'; }
+    btn.disabled=false; btn.textContent='Run Solver';
+  },30);
+});
+buildPlayers();
+$('multBlock').classList.remove('off');
+
+// register service worker for offline / permanent home-screen use
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
