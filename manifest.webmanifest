@@ -1,7 +1,7 @@
 {
   "name": "Crazy Squid Solver",
   "short_name": "Squid Solver",
-  "description": "Monte Carlo EV solver for Crazy Squid — runs entirely on your device.",
+  "description": "Exact EV solver for Crazy Squid — runs entirely on your device.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
